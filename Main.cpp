@@ -187,14 +187,8 @@ void drawScreen(Matrix *screen, int wall_depth)
 class MyOnLeft : public ActionHandler {
 public:
     void run(Tetris *t, char key) {
-      int x;
-      // t->left = t->left - 1;
-      x = t->left + t->currBlk->get_dx();
-      if (x <= 3)
-        t->left = t->left+1;
-      else
-        t->left = t->left-1;
-      cout<<"x:"<<x<<endl;
+      if (t->left>0)
+        t->left--;
       return;
     }
 };
@@ -202,42 +196,35 @@ public:
 class MyOnRight : public ActionHandler {
 public:
     void run(Tetris *t, char key) {
-        int x;
-        // t->left = t->left + 1;
-        x = t->left + t->currBlk->get_dx();
-        if (x>=18)
-          t->left = t->left-1;
-        else 
-          t->left = t->left+1;
-        cout<<"x:"<<x<<endl;
-        return;
+      if (t->left<14)
+        t->left++;
+      return;
     }
 };
 
 class MyOnDown : public ActionHandler {
 public :
   void run(Tetris *t, char key) {
-    int y;
-    y = t->top + t->currBlk->get_dy();
-
-    cout<<"y:"<<y<<endl;
-    if (y>=18)
-      t->top = t->top-1;
-    else
-      t->top = t->top+1;
+     if (t->top<14)
+      t->top++;
+    return;
   }
 };
 
 class MyOnUp : public ActionHandler {
 public :
   void run(Tetris *t, char key) {
-    int y;
-    y = t->top + t->currBlk->get_dy();
-    cout<<"y:"<<y<<endl;
-    if (y<=4)
-      t->top = t->top+1;
-    else
-      t->top = t->top-1;
+    if (t->top>0)
+      t->top--;
+    return;
+  }
+};
+
+
+class MyDummy : public ActionHandler{
+  public :
+  void run(Tetris *t, char key){
+    return;
   }
 };
 
@@ -258,56 +245,60 @@ class MyFix : public ActionHandler {
 Matrix *myDeleteFullLines(Matrix *screen, Matrix *blk, int top,int left, int dw){
   Matrix *line, *bline, *zero, *temp, *zero2;
   int cy, y;
+  int cx, x;
   int nDeleted, nScanned;
   int ws_dy = screen->get_dy() - 2*dw;
   int ws_dx = screen->get_dx() - 2*dw;
 
-  int cx,x;
-  int nDeleted2;
-  int nScanned2;
 
   if (top + blk->get_dy() > ws_dy + dw)
     nScanned = ws_dy + dw - top;
   else if (top + blk->get_dy() <= ws_dy + dw)
     nScanned = blk->get_dy();
-  else if (top + blk->get_dx() > ws_dx + dw)
-    nScanned = ws_dx + dw - left;
-  else if (top + blk->get_dx() <= ws_dx + dw)
+  else if (left + blk->get_dx() > ws_dx +2*dw)
+    nScanned = ws_dx +2*dw - left;
+  else if (left + blk->get_dx() <= ws_dx + 2*dw)
     nScanned = blk->get_dx();
   
+  int del[ws_dy];
   zero = new Matrix(1, ws_dx);
   zero2 = new Matrix(10,1);
-
-  for (y = nScanned - 1, nDeleted = 0; y >= 0; y--) {
-    cy = top + y + nDeleted;
-    line = screen->clip(cy, dw, cy+1, dw + ws_dx);
-    bline = line->int2bool(); // binary version of line
+  
+  for (y = nScanned - 1; y>=0; y--) {
+    cy = top + y;
+    line = screen->clip(cy,dw,cy+1,dw+ws_dx);
+    bline = line->int2bool();
     delete line;
     if (bline->sum() == ws_dx) {
-      // temp = screen->clip(dw, dw, cy, dw + ws_dx);
-      // screen->paste(temp, dw+1, dw);
-      screen->paste(zero,cy,dw);
-      nDeleted++;
+      del[cy-dw] = 1;
     }
     delete bline;
   }
 
-  for (x = nScanned -1, nDeleted =0; x>=0; x--) {
-    cx = left + x + nDeleted;
-    line = screen->clip(0,cx,ws_dy,cx+1);
+  for (x = nScanned-1; x>=0; x--) {
+    cx = left + x;
+    line = screen->clip(dw,cx,ws_dx+dw,cx+1);
     bline = line->int2bool();
     delete line;
-    if (bline->sum() == ws_dy){
+
+    if (bline->sum() == ws_dy) {
       screen->paste(zero2,dw,cx);
-      nDeleted++;
     }
-    delete bline; 
+    delete bline;
   }
+
+  int i;
+  for (i=0; i<=ws_dy; i++) {
+    if (del[i]==1){
+      screen->paste(zero,i+dw,dw);
+    }
+  }
+
   delete zero;
   delete zero2;
   return screen;
 }
-
+ 
 class myOnNewBlock : public ActionHandler {
   public :
     void run(Tetris *t,char key) {
@@ -336,21 +327,12 @@ int main(int argc, char *argv[]) {
   /////////////////////////////////////////////////////////////////////////
   /// Plug-in architecture for generalized Tetris class
   /////////////////////////////////////////////////////////////////////////
-  Tetris::setOperation('a', TetrisState::Running, new MyOnLeft(),    TetrisState::Running, new MyOnLeft(), TetrisState::Running);
-  Tetris::setOperation('d', TetrisState::Running, new MyOnRight(), TetrisState::Running, new MyOnRight(),    TetrisState::Running);
-  Tetris::setOperation('e',TetrisState::Running, new MyOnUp(), TetrisState::Running, new MyOnUp(), TetrisState::Running);
-  Tetris::setOperation('s', TetrisState::Running, new MyOnDown(), TetrisState::Running, new MyOnDown(),     TetrisState::Running);
-  Tetris::setOperation('w', TetrisState::Running,  new OnClockWise(),    TetrisState::Running, new OnCounterClockWise(),  TetrisState::Running);
-  // Tetris::setOperation(' ', TetrisState::Running, new OnDrop(),   TetrisState::Running, new OnUp(),     TetrisState::NewBlock);
+  Tetris::setOperation('a', TetrisState::Running, new MyOnLeft(),    TetrisState::Running, new MyDummy(), TetrisState::Running);
+  Tetris::setOperation('d', TetrisState::Running, new MyOnRight(), TetrisState::Running, new MyDummy(),    TetrisState::Running);
+  Tetris::setOperation('e',TetrisState::Running, new MyOnUp(), TetrisState::Running, new MyDummy(), TetrisState::Running);
+  Tetris::setOperation('s', TetrisState::Running, new MyOnDown(), TetrisState::Running, new MyDummy(),     TetrisState::Running);
+  Tetris::setOperation('w', TetrisState::Running,  new OnClockWise(),    TetrisState::Running, new MyDummy(),  TetrisState::Running);
   Tetris::setOperation(' ', TetrisState::Running, new MyFix(),   TetrisState::NewBlock, new OnFinished(),     TetrisState::Finished);
-  
-  // Tetris::setOperation('0', TetrisState::NewBlock, new OnNewBlock(), TetrisState::Running, new OnFinished(), TetrisState::Finished);
-  // Tetris::setOperation('1', TetrisState::NewBlock, new OnNewBlock(), TetrisState::Running, new OnFinished(), TetrisState::Finished);
-  // Tetris::setOperation('2', TetrisState::NewBlock, new OnNewBlock(), TetrisState::Running, new OnFinished(), TetrisState::Finished);
-  // Tetris::setOperation('3', TetrisState::NewBlock, new OnNewBlock(), TetrisState::Running, new OnFinished(), TetrisState::Finished);
-  // Tetris::setOperation('4', TetrisState::NewBlock, new OnNewBlock(), TetrisState::Running, new OnFinished(), TetrisState::Finished);
-  // Tetris::setOperation('5', TetrisState::NewBlock, new OnNewBlock(), TetrisState::Running, new OnFinished(), TetrisState::Finished);
-  // Tetris::setOperation('6', TetrisState::NewBlock, new OnNewBlock(), TetrisState::Running, new OnFinished(), TetrisState::Finished);
   
   Tetris::setOperation('0', TetrisState::NewBlock, new myOnNewBlock(), TetrisState::Running, new OnFinished(), TetrisState::Finished);
   Tetris::setOperation('1', TetrisState::NewBlock, new myOnNewBlock(), TetrisState::Running, new OnFinished(), TetrisState::Finished);
