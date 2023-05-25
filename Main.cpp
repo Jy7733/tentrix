@@ -228,18 +228,18 @@ class MyDummy : public ActionHandler{
   }
 };
 
-class MyFix : public ActionHandler {
-  public :
-  void run(Tetris *t, char key){
-    Matrix *tempBlk;
-    tempBlk = t->overlap_currBlk();
-    if (anyConflict(tempBlk) == true) {
-      delete tempBlk;
-    }
-    delete tempBlk;
-    return;
-  }
-};
+// class MyFix : public ActionHandler {
+//   public :
+//   void run(Tetris *t, char key){
+//     Matrix *tempBlk;
+//     tempBlk = t->overlap_currBlk();
+//     if (anyConflict(tempBlk) == true) {
+//       delete tempBlk;
+//     }
+//     delete tempBlk;
+//     return;
+//   }
+// };
 
 
 Matrix *myDeleteFullLines(Matrix *screen, Matrix *blk, int top,int left, int dw){
@@ -332,7 +332,7 @@ int main(int argc, char *argv[]) {
   Tetris::setOperation('e',TetrisState::Running, new MyOnUp(), TetrisState::Running, new MyDummy(), TetrisState::Running);
   Tetris::setOperation('s', TetrisState::Running, new MyOnDown(), TetrisState::Running, new MyDummy(),     TetrisState::Running);
   Tetris::setOperation('w', TetrisState::Running,  new OnClockWise(),    TetrisState::Running, new MyDummy(),  TetrisState::Running);
-  Tetris::setOperation(' ', TetrisState::Running, new MyFix(),   TetrisState::NewBlock, new OnFinished(),     TetrisState::Finished);
+  Tetris::setOperation(' ', TetrisState::Running, new MyDummy(),   TetrisState::NewBlock, new MyDummy(),     TetrisState::Running);
   
   Tetris::setOperation('0', TetrisState::NewBlock, new myOnNewBlock(), TetrisState::Running, new OnFinished(), TetrisState::Finished);
   Tetris::setOperation('1', TetrisState::NewBlock, new myOnNewBlock(), TetrisState::Running, new OnFinished(), TetrisState::Finished);
